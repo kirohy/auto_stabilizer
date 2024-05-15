@@ -178,7 +178,8 @@ RTC::ReturnCode_t AutoStabilizer::onInitialize(){
   {
     // load end_effector
     std::string endEffectors; this->getProperty("end_effectors", endEffectors);
-    std::stringstream ss_endEffectors(endEffectors);
+    std::string operatingPoints; this->getProperty("additional_operating_points", operatingPoints);
+    std::stringstream ss_endEffectors(endEffectors + operatingPoints);
     std::string buf;
     while(std::getline(ss_endEffectors, buf, ',')){
       std::string name;
@@ -306,16 +307,16 @@ RTC::ReturnCode_t AutoStabilizer::onInitialize(){
       std::string forceSensor = "";
       cnoid::LinkPtr link = this->gaitParam_.refRobotRaw->link(this->gaitParam_.eeParentLink[i]);
       bool found = false;
-      while (link != nullptr && found == false) {
+      if (link != nullptr && found == false) { // end-effectorのparent-linkと同じ個所にforceSensorがあることが前提
         for (size_t j = 0; j < forceSensors.size(); j++) {
           if(forceSensors[j]->link() == link) {
             forceSensor = forceSensors[j]->name();
             found = true;
+            this->actToGenFrameConverter_.eeForceSensor[i] = forceSensor;
             break;
           }
         }
       }
-      this->actToGenFrameConverter_.eeForceSensor[i] = forceSensor;
     }
   }
 
@@ -1487,6 +1488,17 @@ bool AutoStabilizer::setAutoStabilizerParam(const OpenHRP::AutoStabilizerService
       if(value != this->fullbodyIKSolver_.dqWeight[i].getGoal()) this->fullbodyIKSolver_.dqWeight[i].setGoal(value, 2.0); // 2秒で遷移
     }
   }
+  if(i_param.ee_position_weight.length() == this->fullbodyIKSolver_.ikEEPositionWeight.size()){
+    for(int i=0;i<this->gaitParam_.eeName.size();i++) {
+      if(i_param.ee_position_weight[i].length() == 6){
+        cnoid::Vector6 tmp_ee_weight = cnoid::Vector6::Constant(1.0);
+        for(int j=0;j<6;j++){
+            tmp_ee_weight[j] = std::max(i_param.ee_position_weight[i][j], 0.0);
+        }
+        if(tmp_ee_weight != this->fullbodyIKSolver_.ikEEPositionWeight[i].getGoal()) this->fullbodyIKSolver_.ikEEPositionWeight[i].setGoal(tmp_ee_weight, 2.0);
+      }
+    }
+  }
 
   return true;
 }
@@ -1693,6 +1705,13 @@ bool AutoStabilizer::getAutoStabilizerParam(OpenHRP::AutoStabilizerService::Auto
   i_param.dq_weight.length(this->fullbodyIKSolver_.dqWeight.size());
   for(int i=0;i<this->fullbodyIKSolver_.dqWeight.size();i++){
     i_param.dq_weight[i] = this->fullbodyIKSolver_.dqWeight[i].getGoal();
+  }
+  i_param.ee_position_weight.length(this->fullbodyIKSolver_.ikEEPositionWeight.size());
+  for(int i=0;i<this->fullbodyIKSolver_.ikEEPositionWeight.size();i++){
+    i_param.ee_position_weight[i].length(6);
+    for(int j=0;j<6;j++){
+      i_param.ee_position_weight[i][j] = this->fullbodyIKSolver_.ikEEPositionWeight[i].getGoal()[j];
+    }
   }
 
   return true;

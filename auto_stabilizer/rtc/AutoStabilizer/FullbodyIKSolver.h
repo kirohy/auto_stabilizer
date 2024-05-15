@@ -15,6 +15,7 @@ class FullbodyIKSolver{
 public:
   // FullbodyIKSolverでのみ使うパラメータ
   std::vector<cpp_filters::TwoPointInterpolator<double> > dqWeight; // 要素数と順序はrobot->numJoints()と同じ. 0より大きい. 各関節の変位に対する重みの比. default 1. 動かしたくない関節は大きくする. 全く動かしたくないなら、controllable_jointsを使うこと
+  std::vector<cpp_filters::TwoPointInterpolator<cnoid::Vector6>> ikEEPositionWeight; // 要素数と順序はGaitParam.eeNameと同じ.
 
   // FullbodyIKSolverでのみ使うパラメータ
   // 内部にヤコビアンの情報をキャッシュするが、クリアしなくても副作用はあまりない
@@ -34,6 +35,9 @@ public:
   // 初期化時に一回呼ばれる
   void init(const cnoid::BodyPtr& genRobot, const GaitParam& gaitParam){
     dqWeight.resize(genRobot->numJoints(), cpp_filters::TwoPointInterpolator<double>(1.0, 0.0, 0.0, cpp_filters::HOFFARBIB));
+    ikEEPositionWeight.clear();
+    for (int i=0;i<NUM_LEGS;i++) ikEEPositionWeight.push_back(cpp_filters::TwoPointInterpolator<cnoid::Vector6>(cnoid::Vector6::Constant(3.0), cnoid::Vector6::Zero(), cnoid::Vector6::Zero(), cpp_filters::HOFFARBIB));
+    for (int i=NUM_LEGS;i<gaitParam.eeName.size();i++) ikEEPositionWeight.push_back(cpp_filters::TwoPointInterpolator<cnoid::Vector6>(cnoid::Vector6::Constant(1.0), cnoid::Vector6::Zero(), cnoid::Vector6::Zero(), cpp_filters::HOFFARBIB));
     ikEEPositionConstraint.clear();
     for(int i=0;i<gaitParam.eeName.size();i++) ikEEPositionConstraint.push_back(std::make_shared<IK::PositionConstraint>());
     refJointAngleConstraint.clear();
@@ -49,11 +53,13 @@ public:
   // startAutoBalancer時に一回呼ばれる
   void reset(){
     for(int i=0;i<dqWeight.size();i++) dqWeight[i].reset(dqWeight[i].getGoal());
+    for(int i=0;i<ikEEPositionWeight.size();i++) ikEEPositionWeight[i].reset(ikEEPositionWeight[i].getGoal());
   }
 
   // 毎周期呼ばれる
   void update(double dt){
     for(int i=0;i<dqWeight.size();i++) dqWeight[i].interpolate(dt);
+    for(int i=0;i<ikEEPositionWeight.size();i++) ikEEPositionWeight[i].interpolate(dt);
   }
 
   bool solveFullbodyIK(double dt, const GaitParam& gaitParam,
