@@ -1499,6 +1499,13 @@ bool AutoStabilizer::setAutoStabilizerParam(const OpenHRP::AutoStabilizerService
       }
     }
   }
+  if(this->mode_.now() == ControlMode::MODE_IDLE){
+    if(i_param.ee_eval_link_name.length() == this->fullbodyIKSolver_.ikEEEvalLink.size()){
+      for(int i=0;i<this->fullbodyIKSolver_.ikEEEvalLink.size();i++){
+        this->fullbodyIKSolver_.ikEEEvalLink[i] = i_param.ee_eval_link_name[i];
+      }
+    }
+  }
 
   return true;
 }
@@ -1712,6 +1719,10 @@ bool AutoStabilizer::getAutoStabilizerParam(OpenHRP::AutoStabilizerService::Auto
     for(int j=0;j<6;j++){
       i_param.ee_position_weight[i][j] = this->fullbodyIKSolver_.ikEEPositionWeight[i].getGoal()[j];
     }
+  }
+  i_param.ee_eval_link_name.length(this->fullbodyIKSolver_.ikEEEvalLink.size());
+  for(int i=0;i<this->fullbodyIKSolver_.ikEEEvalLink.size();i++){
+    i_param.ee_eval_link_name[i] = this->fullbodyIKSolver_.ikEEEvalLink[i].c_str();
   }
 
   return true;

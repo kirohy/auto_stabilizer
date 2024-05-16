@@ -16,6 +16,7 @@ public:
   // FullbodyIKSolverでのみ使うパラメータ
   std::vector<cpp_filters::TwoPointInterpolator<double> > dqWeight; // 要素数と順序はrobot->numJoints()と同じ. 0より大きい. 各関節の変位に対する重みの比. default 1. 動かしたくない関節は大きくする. 全く動かしたくないなら、controllable_jointsを使うこと
   std::vector<cpp_filters::TwoPointInterpolator<cnoid::Vector6>> ikEEPositionWeight; // 要素数と順序はGaitParam.eeNameと同じ.
+  std::vector<std::string> ikEEEvalLink; // 要素数と順序はGaitParam.eeNameと同じ.
 
   // FullbodyIKSolverでのみ使うパラメータ
   // 内部にヤコビアンの情報をキャッシュするが、クリアしなくても副作用はあまりない
@@ -38,6 +39,7 @@ public:
     ikEEPositionWeight.clear();
     for (int i=0;i<NUM_LEGS;i++) ikEEPositionWeight.push_back(cpp_filters::TwoPointInterpolator<cnoid::Vector6>(cnoid::Vector6::Constant(3.0), cnoid::Vector6::Zero(), cnoid::Vector6::Zero(), cpp_filters::HOFFARBIB));
     for (int i=NUM_LEGS;i<gaitParam.eeName.size();i++) ikEEPositionWeight.push_back(cpp_filters::TwoPointInterpolator<cnoid::Vector6>(cnoid::Vector6::Constant(1.0), cnoid::Vector6::Zero(), cnoid::Vector6::Zero(), cpp_filters::HOFFARBIB));
+    ikEEEvalLink.resize(gaitParam.eeName.size());
     ikEEPositionConstraint.clear();
     for(int i=0;i<gaitParam.eeName.size();i++) ikEEPositionConstraint.push_back(std::make_shared<IK::PositionConstraint>());
     refJointAngleConstraint.clear();

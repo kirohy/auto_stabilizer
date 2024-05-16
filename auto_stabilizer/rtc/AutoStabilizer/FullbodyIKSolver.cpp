@@ -73,8 +73,9 @@ bool FullbodyIKSolver::solveFullbodyIK(double dt, const GaitParam& gaitParam,
     this->ikEEPositionConstraint[i]->maxError() << 10.0*dt, 10.0*dt, 10.0*dt, 10.0*dt, 10.0*dt, 10.0*dt;
     this->ikEEPositionConstraint[i]->precision() << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; // 強制的にIKをmax loopまで回す
     this->ikEEPositionConstraint[i]->weight() = this->ikEEPositionWeight[i].value();
-    this->ikEEPositionConstraint[i]->eval_link() = nullptr;
-    this->ikEEPositionConstraint[i]->eval_localR() = this->ikEEPositionConstraint[i]->B_localpos().linear();
+    this->ikEEPositionConstraint[i]->eval_link() = genRobot->link(this->ikEEEvalLink[i]);
+    if(this->ikEEPositionConstraint[i]->eval_link()) this->ikEEPositionConstraint[i]->eval_localR() = this->ikEEPositionConstraint[i]->eval_link()->R().transpose() * this->ikEEPositionConstraint[i]->B_localpos().linear();
+    else this->ikEEPositionConstraint[i]->eval_localR() = this->ikEEPositionConstraint[i]->B_localpos().linear();
     ikConstraint2.push_back(this->ikEEPositionConstraint[i]);
   }
 
