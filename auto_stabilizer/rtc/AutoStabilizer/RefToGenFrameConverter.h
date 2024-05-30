@@ -2,6 +2,7 @@
 #define REFTOGENFRAMECONVERTER_H
 
 #include "GaitParam.h"
+#include "FootStepGenerator.h"
 #include <cnoid/Body>
 
 class RefToGenFrameConverter {
@@ -38,15 +39,17 @@ public:
                     cnoid::BodyPtr& genRobot, cpp_filters::TwoPointInterpolatorSE3& o_footMidCoords, cnoid::Vector3& o_genCogVel, cnoid::Vector3& o_genCogAcc) const; // output
 
   // reference frameで表現されたrefRobotRawをgenerate frameに投影しrefRobotとし、各種referencec値をgenerate frameに変換する
-  bool convertFrame(const GaitParam& gaitParam, double dt,// input
-                    cnoid::BodyPtr& refRobot, std::vector<cnoid::Position>& o_refEEPose, std::vector<cnoid::Vector6>& o_refEEWrench, double& o_refdz, cpp_filters::TwoPointInterpolatorSE3& o_footMidCoords) const; // output
+  // TODO : const関数じゃなくなった
+  bool convertFrame(GaitParam& gaitParam, double dt, FootStepGenerator& footStepGenerator,// input
+                    cnoid::BodyPtr& refRobot, std::vector<cnoid::Position>& o_refEEPose, std::vector<cnoid::Vector6>& o_refEEWrench, double& o_refdz, cpp_filters::TwoPointInterpolatorSE3& o_footMidCoords); // output
 protected:
   // 現在のFootStepNodesListから、genRobotのfootMidCoordsを求める (gaitParam.footMidCoords)
   void calcFootMidCoords(const GaitParam& gaitParam, double dt, cpp_filters::TwoPointInterpolatorSE3& footMidCoords) const;
   // refRobotRawをrefRobotに変換する.
   void convertRefRobotRaw(const GaitParam& gaitParam, const cnoid::Position& genFootMidCoords, cnoid::BodyPtr& refRobot, std::vector<cnoid::Position>& refEEPoseFK, double& refdz) const;
   // refEEPoseRawを変換する.
-  void convertRefEEPoseRaw(const GaitParam& gaitParam, const cnoid::Position& genFootMidCoords, std::vector<cnoid::Position>& refEEPoseWithOutFK) const;
+  void convertRefEEPoseRawAbsolute(const GaitParam& gaitParam, const cnoid::Position& genFootMidCoords, std::vector<cnoid::Position>& refEEPoseWithOutFK) const;
+  void convertRefEEPoseRawDifferential(GaitParam& gaitParam, double dt, const cnoid::Position& genFootMidCoords, std::vector<cnoid::Position>& refEEPoseWithOutFK, FootStepGenerator& footStepGenerator);
 
   // refFootOriginWeightとdefaultTranslatePosとcopOffset.value() に基づいて両足中間座標を求める
   cnoid::Position calcRefFootMidCoords(const cnoid::Position& rleg_, const cnoid::Position& lleg_, const GaitParam& gaitParam) const;

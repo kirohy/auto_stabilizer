@@ -67,6 +67,10 @@ public:
   std::vector<cnoid::Vector6> refEEWrench; // 要素数と順序はeeNameと同じ.generate frame. EndEffector origin. ロボットが受ける力
   double refdz = 1.0; // generate frame. 支持脚からのCogの目標高さ. 0より大きい
   cpp_filters::TwoPointInterpolatorSE3 footMidCoords = cpp_filters::TwoPointInterpolatorSE3(cnoid::Position::Identity(),cnoid::Vector6::Zero(),cnoid::Vector6::Zero(),cpp_filters::HOFFARBIB); // generate frame. Z軸は鉛直. 支持脚の位置姿勢(Z軸は鉛直)にdefaultTranslatePosを適用したものの間をつなぐ. interpolatorによって連続的に変化する. reference frameとgenerate frameの対応付けに用いられる
+  bool isWbmsAbsolute = false; // 操縦時の姿勢反映モード
+  std::vector<double> humanToRobotRatio; // 操縦時のエンドエフェクタ位置の拡大率
+  std::vector<cnoid::Position> wbmsOffsetPoseMaster; // 要素数と順序はeeNameと同じ. wbms起動時の姿勢を保存
+  std::vector<cnoid::Position> wbmsOffsetPoseSlave; // 要素数と順序はeeNameと同じ. wbms起動時の姿勢を保存
 
   // actToGenFrameConverter
   cnoid::BodyPtr actRobot; // actual. generate frame
@@ -196,6 +200,9 @@ public:
     refEEPoseRaw.push_back(cpp_filters::TwoPointInterpolatorSE3(cnoid::Position::Identity(), cnoid::Vector6::Zero(),cnoid::Vector6::Zero(), cpp_filters::HOFFARBIB));
     refEEPose.push_back(cnoid::Position::Identity());
     refEEWrench.push_back(cnoid::Vector6::Zero());
+    humanToRobotRatio.push_back(1.0);
+    wbmsOffsetPoseMaster.push_back(cnoid::Position::Identity());
+    wbmsOffsetPoseSlave.push_back(cnoid::Position::Identity());
     actEEPose.push_back(cnoid::Position::Identity());
     actEEWrench.push_back(cnoid::Vector6::Zero());
     icEEOffset.push_back(cpp_filters::TwoPointInterpolator<cnoid::Vector6>(cnoid::Vector6::Zero(),cnoid::Vector6::Zero(),cnoid::Vector6::Zero(), cpp_filters::HOFFARBIB));

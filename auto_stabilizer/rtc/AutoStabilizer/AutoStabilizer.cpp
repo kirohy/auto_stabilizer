@@ -560,7 +560,7 @@ bool AutoStabilizer::readInPortData(const double& dt, const GaitParam& gaitParam
 }
 
 // static function
-bool AutoStabilizer::execAutoStabilizer(const AutoStabilizer::ControlMode& mode, GaitParam& gaitParam, double dt, const FootStepGenerator& footStepGenerator, const LegCoordsGenerator& legCoordsGenerator, const RefToGenFrameConverter& refToGenFrameConverter, const ActToGenFrameConverter& actToGenFrameConverter, const ImpedanceController& impedanceController, const Stabilizer& stabilizer, const ExternalForceHandler& externalForceHandler, const FullbodyIKSolver& fullbodyIKSolver,const LegManualController& legManualController, const CmdVelGenerator& cmdVelGenerator) {
+bool AutoStabilizer::execAutoStabilizer(const AutoStabilizer::ControlMode& mode, GaitParam& gaitParam, double dt, FootStepGenerator& footStepGenerator, const LegCoordsGenerator& legCoordsGenerator, RefToGenFrameConverter& refToGenFrameConverter, const ActToGenFrameConverter& actToGenFrameConverter, const ImpedanceController& impedanceController, const Stabilizer& stabilizer, const ExternalForceHandler& externalForceHandler, const FullbodyIKSolver& fullbodyIKSolver,const LegManualController& legManualController, const CmdVelGenerator& cmdVelGenerator) {
   if(mode.isSyncToABCInit()){ // startAutoBalancer直後の初回. gaitParamのリセット
     refToGenFrameConverter.initGenRobot(gaitParam,
                                         gaitParam.genRobot, gaitParam.footMidCoords, gaitParam.genCogVel, gaitParam.genCogAcc);
@@ -577,7 +577,7 @@ bool AutoStabilizer::execAutoStabilizer(const AutoStabilizer::ControlMode& mode,
   }
 
   // FootOrigin座標系を用いてrefRobotRawをgenerate frameに投影しrefRobotとする
-  refToGenFrameConverter.convertFrame(gaitParam, dt,
+  refToGenFrameConverter.convertFrame(gaitParam, dt, footStepGenerator,
                                       gaitParam.refRobot, gaitParam.refEEPose, gaitParam.refEEWrench, gaitParam.refdz, gaitParam.footMidCoords);
 
   // FootOrigin座標系を用いてactRobotRawをgenerate frameに投影しactRobotとする
@@ -1202,6 +1202,10 @@ bool AutoStabilizer::startWholeBodyMasterSlave(void){
       return false;
     }
     this->refToGenFrameConverter_.solveFKMode.setGoal(0.0, 5.0); // 5秒で遷移
+    for(int i=0;i<gaitParam_.eeName.size();i++){ // startWholeBodyMasterSlave時のEE姿勢を保存
+      this->gaitParam_.wbmsOffsetPoseMaster[i] = this->gaitParam_.refEEPoseRaw[i].value();
+      this->gaitParam_.wbmsOffsetPoseSlave[i] = this->gaitParam_.refEEPose[i];
+    }
     std::cerr << "[" << this->m_profile.instance_name << "] Start WholeBodyMasterSlave" << std::endl;
     return true;
   }else{
@@ -1286,6 +1290,14 @@ bool AutoStabilizer::setAutoStabilizerParam(const OpenHRP::AutoStabilizerService
       }else{
         this->gaitParam_.isManualControlMode[i].reset(i_param.is_manual_control_mode[i] ? 1.0 : 0.0);
       }
+    }
+  }
+  if(this->mode_.now() == ControlMode::MODE_IDLE){
+    this->gaitParam_.isWbmsAbsolute = i_param.is_wbms_absolute;
+  }
+  if(this->mode_.now() == ControlMode::MODE_IDLE && this->gaitParam_.humanToRobotRatio.size() == i_param.human_to_robot_ratio.length()){
+    for(int i=0;i<gaitParam_.humanToRobotRatio.size();i++){
+      this->gaitParam_.humanToRobotRatio[i] = i_param.human_to_robot_ratio[i];
     }
   }
 
@@ -1544,6 +1556,9 @@ bool AutoStabilizer::getAutoStabilizerParam(OpenHRP::AutoStabilizerService::Auto
   for(int i=0;i<NUM_LEGS; i++) {
     i_param.is_manual_control_mode[i] = (this->gaitParam_.isManualControlMode[i].getGoal() == 1.0);
   }
+  i_param.is_wbms_absolute = this->gaitParam_.isWbmsAbsolute;
+  i_param.human_to_robot_ratio.length(this->gaitParam_.eeName.size());
+  for(int i=0;i<this->gaitParam_.eeName.size();i++) i_param.human_to_robot_ratio[i] = this->gaitParam_.humanToRobotRatio[i];
 
   i_param.is_hand_fix_mode = (this->refToGenFrameConverter_.handFixMode.getGoal() == 1.0);
   i_param.reference_frame.length(NUM_LEGS);

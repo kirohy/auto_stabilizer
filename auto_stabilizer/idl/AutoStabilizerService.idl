@@ -83,6 +83,10 @@ module OpenHRP
       boolean is_hand_fix_mode;
       /// 要素数2. 0: rleg. 1: lleg. reference frameのfootMidCoordsを計算するときに使うか
       sequence<boolean, 2> reference_frame;
+      /// 姿勢反映モード
+      boolean is_wbms_absolute;
+      /// 要素数EndEffectors. 操縦時の位置差分の拡大率
+      sequence<double> human_to_robot_ratio;
 
       // ActToGenFrameConverter
       /// [roll, pitch, yaw]. rootLink Frame. Actual robotのrootLinkの姿勢に加えるオフセット. IMUの取り付け位置のオフセットを考慮するためのものではない(それはモデルファイルを変えれば良い). 全身のキャリブのずれなど次第に出てくるなにかしらのずれをごますためのもの. 本来このようなパラメータは必要ないのが望ましいが、実用上は確かに必要.
